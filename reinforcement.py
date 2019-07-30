@@ -1,7 +1,7 @@
 import random
 import numpy
 import math
-
+import pickle
 
 class Wallet:
     def __init__(self, fees_rate, money, btc):
@@ -139,6 +139,26 @@ class Population:
             )
         best_individuals.clear()
 
+    def save_individuals(self):
+        for i in range(len(self.list_individual)):
+            l = str(self.layers)
+            #l = "_".join(map(str, l))
+            filename = "saves/l_" + l
+            # filename = filename + "_s_" + str(self.list_wallet[i].score)
+            filename = filename + "_nb_" + str(i) + ".dat"
+            filename = filename.replace(", ", "_")
+            filename = filename.replace("[", "")
+            filename = filename.replace("]", "")
+            f = open(filename,'wb')
+            pickle.dump(self.list_individual[i], f)
+            f.close()
+            # f = open(filename,'rb')
+            # example_dict = pickle.load(f)
+            # print(example_dict)
+
+
+
+
 
 def get_all_predictions(layers, W, Xinput):
     Xinput.append(1)  # Bias
@@ -244,12 +264,13 @@ def get_all_line_csv(filename):
 
 
 if __name__ == "__main__":
-    filename = "coinbaseUSD_1D.csv"
-    layers = [9, 3]
+    #filename = "coinbaseUSD_1min_clean.csv"
+    filename = "coinbaseUSD_1M.csv"
+    layers = [8, 20, 10, 5, 3]
     epochs = 200
     starting_balance = 100
     keep_best = 2
-    nb_population = 5
+    nb_population = 1000
     btc = 0
     fees_rate = 0.5
     population = Population(nb_population, layers, fees_rate, starting_balance, btc)
@@ -264,6 +285,7 @@ if __name__ == "__main__":
         population.update_all_scores(price)
         population.print_scores()
         population.print_avg_score()
+        population.save_individuals()
         best_individuals = population.select_best_individual(keep_best)
         if epoch < epochs - 1:
             population.create_next_generation(best_individuals)
