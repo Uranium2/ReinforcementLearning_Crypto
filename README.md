@@ -14,13 +14,14 @@ The signal score is the money made at the end of the period in the CSV file.
 
 ## TODO
   
-  - Crossover
-    - Selection: Get best individuals regarding score.
-    - Save best individuals (This can cause premature convergence over the long term. Because we can keep the best individual for ever)
-    - Fill rest of population:
-      - Cross layers, Cross neurons
-      - Average neurons
-      - Random between father and mother neurons
-   - Mutation
-    - Need to find a mutation strategy. Random on all gens? Random on x gens? What direction, up, down?
-   - Profit?
+  - [ ] Crossover
+    - [X] Selection: Get best individuals regarding score.
+    - [X] Save best individuals (This can cause premature convergence over the long term. Because we can keep the best individual for ever)
+    - [X] Fill rest of population:
+      - [X] Fully new random
+      - [ ] Cross layers, Cross neurons
+      - [ ] Average neurons
+      - [ ] Random between father and mother neurons
+   - [ ] Mutation
+    - [ ] Need to find a mutation strategy. Random on all gens? Random on x gens? What direction, up, down?
+   - [ ] Profit?
