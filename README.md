@@ -21,7 +21,7 @@ The signal score is the money made at the end of the period in the CSV file.
       - [X] Fully new random
       - [ ] Cross layers, Cross neurons
       - [ ] Average neurons
-      - [ ] Random between father and mother neurons
+      - [X] Random between father and mother neurons
    - [ ] Mutation
     - [ ] Need to find a mutation strategy. Random on all gens? Random on x gens? What direction, up, down?
    - [ ] Profit?
