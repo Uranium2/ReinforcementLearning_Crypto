@@ -2,6 +2,7 @@ import random
 import numpy
 import math
 import pickle
+from multiprocessing import Pool
 
 class Wallet:
     def __init__(self, fees_rate, money, btc):
@@ -156,6 +157,19 @@ class Population:
             # example_dict = pickle.load(f)
             # print(example_dict)
 
+def predict(population, layers, price, X, i):
+    if population.list_wallet[i].last_action == "SELL":
+        X.append(-1)
+    elif population.list_wallet[i].last_action == "BUY":
+        X.append(1)
+    elif population.list_wallet[i].last_action == "HOLD":
+        X.append(0)
+    else:
+        X.append("This should make me crash")
+    predictions = get_all_predictions(layers, population.list_individual[i], X)
+    action = get_next_action(predictions)
+    population.list_wallet[i].make_action(action, price)
+
 
 
 
@@ -234,21 +248,6 @@ def crossover(layers, father, mother):
     return W
 
 
-def predict(layers, population, price, X):
-    for i in range(len(population.list_individual)):
-        if population.list_wallet[i].last_action == "SELL":
-            X.append(-1)
-        elif population.list_wallet[i].last_action == "BUY":
-            X.append(1)
-        elif population.list_wallet[i].last_action == "HOLD":
-            X.append(0)
-        else:
-            X.append("This should make me crash")
-        predictions = get_all_predictions(layers, population.list_individual[i], X)
-        action = get_next_action(predictions)
-        population.list_wallet[i].make_action(action, price)
-
-
 def get_X(line):
     X = line.split(",")
     X = X[1:]
@@ -270,7 +269,7 @@ if __name__ == "__main__":
     epochs = 200
     starting_balance = 100
     keep_best = 2
-    nb_population = 1000
+    nb_population = 2
     btc = 0
     fees_rate = 0.5
     population = Population(nb_population, layers, fees_rate, starting_balance, btc)
@@ -280,7 +279,14 @@ if __name__ == "__main__":
         for line in get_all_line_csv(filename):
             X = get_X(line)
             price = X[3]
-            predict(layers, population, price, X)
+            params = []
+            #predict(poppulation, layers, price, X, i):
+            for i in range(len(population.list_individual)):
+                l = (population, layers, price, X, i)
+                params.append(l)
+                with Pool(5) as p:
+                    p.starmap(predict, params)
+            
 
         population.update_all_scores(price)
         population.print_scores()
