@@ -10,15 +10,15 @@ class Wallet:
 		self.btc = btc
 		self.last_action = "SELL"
 	def update_score(self, price):
-		self.score = self.score + self.money
+		self.score = self.money
 		self.score = self.score + (self.btc * price)
 	def make_action(self, action, price):	
-		if action == "BUY" and self.last_action == "SELL" :
+		if action == "BUY":
 			#print(action)
 			self.btc = self.btc + self.money / price
 			self.money = self.money - self.money 
 			self.last_action = "BUY"
-		elif action == "SELL" and self.last_action == "BUY":
+		elif action == "SELL":
 			#print(action)
 			self.money = self.money + self.btc * price
 			self.btc = self.btc - self.btc
@@ -27,25 +27,75 @@ class Wallet:
 			#print(action)
 			self.btc = self.btc
 			self.money = self.money
+			self.last_action = "HOLD"
 		else:
-			#print("Cannot " + action + ", HOLD instead")
-			self.btc = self.btc
-			self.money = self.money
+			print("\t\t\tERROR BAD ACTION!!!!")
 		# print("My btc: " + str(self.btc))
 		# print("My money: " + str(self.money))
 		# print(" ")
 
 class Population:
 	def __init__(self, nb_population, layers, fees_rate, money, btc):
+		self.layers = layers
 		self.list_individual = []
 		self.list_wallet = []
+		self.initial_fees_rate = fees_rate
+		self.initial_money = money
+		self.initial_btc = btc
 
 		for i in range(nb_population):
-			self.list_individual.append(init_NN(layers))
-			self.list_wallet.append(Wallet(fees_rate, money, btc))
+			self.list_individual.append(init_NN(self.layers))
+			self.list_wallet.append(Wallet(self.initial_fees_rate, self.initial_money, self.initial_btc))
 	def update_all_scores(self, price):
 		for wallet in self.list_wallet:
 			wallet.update_score(price)
+	def print_scores(self):
+		i = 0
+		for wallet in self.list_wallet:
+			print("Wallet " + str(i) + " = " + str(wallet.score))
+			i = i + 1
+	def print_avg_score(self):
+		avg = 0
+		for wallet in self.list_wallet:
+			avg = avg + wallet.score
+		print("Average score for this generation is :" + str(avg / len(self.list_wallet)))
+	def reset_all_scores(self, money):
+		for wallet in self.list_wallet:
+			wallet.score = 0
+			wallet.money = money
+			wallet.btc = 0
+	def select_best_individual(self, limit):
+		best_individuals = []
+		for i in range(limit):
+			max_score = 0
+			index = 0
+			for j in range(len(self.list_individual)):
+				if max_score < self.list_wallet[j].score:
+					max_score = self.list_wallet[j].score
+					index = j
+			best_individuals.append(self.list_individual[index])
+		return best_individuals
+	def create_next_generation(self, best_individuals):
+		len_best = len(best_individuals)
+		len_old = len(self.list_individual) - len_best
+	
+		self.list_individual.clear()
+		self.list_wallet.clear()
+
+		self.list_individual.append(best_individuals[0]) # Keep best of best
+		for i in range(len_best - 1): # Copy best individual
+			self.list_individual.append(best_individuals[i])
+
+		
+		for i in range(len_old): # fill with new random ones
+			self.list_individual.append(init_NN(self.layers))		
+		
+		for i in range(len_best + len_old): # reset wallets
+			self.list_wallet.append(Wallet(self.initial_fees_rate, self.initial_money, self.initial_btc))
+
+		best_individuals.clear()
+
+
 
 
 def get_all_predictions(layers, W, Xinput):
@@ -117,11 +167,19 @@ def crossover(layers, father, mother):
 				W[l][j][i] = crossover_w(father[l][j][i], mother[l][j][i])
 	return W
 
-def predict(layers, population, price):
+def predict(layers, population, price, X):
 	for i in range(len(population.list_individual)):
-				predictions = get_all_predictions(layers, population.list_individual[i], X)
-				action = get_next_action(predictions)
-				population.list_wallet[i].make_action(action, price)
+		if population.list_wallet[i].last_action == "SELL":
+			X.append(-1)
+		elif population.list_wallet[i].last_action == "BUY":
+			X.append(1)
+		elif population.list_wallet[i].last_action == "HOLD":	
+			X.append(0)
+		else: 
+			X.append("This should make me crash")
+		predictions = get_all_predictions(layers, population.list_individual[i], X)
+		action = get_next_action(predictions)
+		population.list_wallet[i].make_action(action, price)
 
 def get_X(line):
 	X = line.split(',')
@@ -136,15 +194,27 @@ def get_all_line_csv(filename):
 	return lines
 
 if __name__ == '__main__':
-	filename = "coinbaseUSD_1W.csv"
-	layers = [8, 5, 5, 3]
-	epochs = 10
-	population = Population(100, layers, 0.5, 1000, 0)
+	filename = "coinbaseUSD_1D.csv"
+	layers = [9, 10, 10, 3]
+	epochs = 200
+	starting_balance = 100
+	keep_best = 2
+	population = Population(5, layers, 0.5, starting_balance, 0)
 
 	for epoch in range(epochs):
+		population.reset_all_scores(starting_balance)
 		for line in get_all_line_csv(filename):
 			X = get_X(line)
 			price = X[3]
-			predict(layers, population, price)
+			predict(layers, population, price, X)
 
 		population.update_all_scores(price)
+		population.print_scores()
+		population.print_avg_score()
+		best_individuals = population.select_best_individual(keep_best)
+		if epoch < epochs - 1:
+			population.create_next_generation(best_individuals)
+	
+
+
+	population.print_scores()
