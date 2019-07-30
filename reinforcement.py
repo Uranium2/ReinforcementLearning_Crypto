@@ -65,16 +65,43 @@ class Population:
 			wallet.money = money
 			wallet.btc = 0
 	def select_best_individual(self, limit):
+		if limit % 2 != 0:
+			limit = limit + 1
+		tmp_ind = self.list_individual.copy()
+		tmp_wallet = self.list_wallet.copy()
 		best_individuals = []
 		for i in range(limit):
 			max_score = 0
 			index = 0
-			for j in range(len(self.list_individual)):
-				if max_score < self.list_wallet[j].score:
-					max_score = self.list_wallet[j].score
+			for j in range(len(tmp_wallet)):
+				if max_score < tmp_wallet[j].score:
 					index = j
-			best_individuals.append(self.list_individual[index])
+					max_score = tmp_wallet[index].score
+
+			best_individuals.append(tmp_ind[index])
+			tmp_ind.pop(index)
+			tmp_wallet.pop(index)
 		return best_individuals
+	def create_new_from_old_gen(self, best_individuals, len_best):
+		new_individuals = []
+
+		for i in range(0, len_best, 2):
+			father = best_individuals[i]
+			mother = best_individuals[i + 1]
+			W = crossover(self.layers, father, mother)
+			new_individuals.append(W)
+
+		random.shuffle(best_individuals)
+		for i in range(0, len_best, 2):
+			father = best_individuals[i]
+			mother = best_individuals[i + 1]
+			W = crossover(self.layers, father, mother)
+			new_individuals.append(W)
+
+		return new_individuals
+
+
+
 	def create_next_generation(self, best_individuals):
 		len_best = len(best_individuals)
 		len_old = len(self.list_individual) - len_best
@@ -82,18 +109,21 @@ class Population:
 		self.list_individual.clear()
 		self.list_wallet.clear()
 
-		self.list_individual.append(best_individuals[0]) # Keep best of best
-		for i in range(len_best - 1): # Copy best individual
-			self.list_individual.append(best_individuals[i])
+		#self.list_individual.append(best_individuals[0]) # Keep best of best
 
+		#for i in range(len_best): # Copy best individual
+		#	self.list_individual.append(best_individuals[i])
+
+		self.list_individual = self.list_individual + self.create_new_from_old_gen(best_individuals, len_best)
 		
 		for i in range(len_old): # fill with new random ones
 			self.list_individual.append(init_NN(self.layers))		
 		
 		for i in range(len_best + len_old): # reset wallets
 			self.list_wallet.append(Wallet(self.initial_fees_rate, self.initial_money, self.initial_btc))
-
 		best_individuals.clear()
+
+		print(len(self.list_individual))
 
 
 
@@ -195,11 +225,14 @@ def get_all_line_csv(filename):
 
 if __name__ == '__main__':
 	filename = "coinbaseUSD_1D.csv"
-	layers = [9, 10, 10, 3]
+	layers = [9, 3]
 	epochs = 200
 	starting_balance = 100
 	keep_best = 2
-	population = Population(5, layers, 0.5, starting_balance, 0)
+	nb_population = 5
+	btc = 0
+	fees_rate = 0.5
+	population = Population(nb_population, layers, fees_rate, starting_balance, btc)
 
 	for epoch in range(epochs):
 		population.reset_all_scores(starting_balance)
