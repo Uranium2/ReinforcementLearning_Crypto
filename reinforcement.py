@@ -158,6 +158,10 @@ class Population:
             # example_dict = pickle.load(f)
             # print(example_dict)
 
+    def mutate_all(self, freq, rate):
+        for i in range(len(self.list_individual)):
+            mutate( self.layers, self.list_individual[i], freq, rate)
+
 def predict(population, layers, price, X, i):
     if population.list_wallet[i].last_action == "SELL":
         X.append(-1)
@@ -170,9 +174,6 @@ def predict(population, layers, price, X, i):
     predictions = get_all_predictions(layers, population.list_individual[i], X)
     action = get_next_action(predictions)
     population.list_wallet[i].make_action(action, price)
-
-
-
 
 
 def get_all_predictions(layers, W, Xinput):
@@ -249,6 +250,19 @@ def crossover(layers, father, mother):
     return W
 
 
+def mutate(layers, W, freq, rate):
+    for l in range(1, len(layers)):
+        for j in range(1, layers[l] + 1):
+            for i in range(layers[l - 1] + 1):
+                rng = random.uniform(0, 100) / 100
+                if (rng <= freq):
+                    sign = random.uniform(-1, 1)
+                    if sign >= 0:
+                        W[l][j][i] = W[l][j][i] + (W[l][j][i] * rate)
+                    else:
+                        W[l][j][i] = W[l][j][i] - (W[l][j][i] * rate)
+
+
 def get_X(line):
     X = line.split(",")
     X = X[1:]
@@ -265,11 +279,12 @@ def get_all_line_csv(filename):
 
 if __name__ == "__main__":
     #filename = "coinbaseUSD_1min_clean.csv"
-    filename = "coinbaseUSD_1M.csv"
+    # filename = "coinbaseUSD_1M.csv"
+    filename = "foo2.csv"
     layers = [8, 20, 10, 5, 3]
-    epochs = 100
+    epochs = 200
     starting_balance = 100
-    keep_best = 2
+    keep_best = 5
     nb_population = 10
     btc = 0
     fees_rate = 0.5
@@ -280,10 +295,12 @@ if __name__ == "__main__":
         for line in get_all_line_csv(filename):
             X = get_X(line)
             price = X[3]
+            maxi = 19891.99
+            mini = 0.06
+            price = price * (maxi - mini) + mini
             for i in range(len(population.list_individual)):
                 predict(population, layers, price, X, i)
             
-
         population.update_all_scores(price)
         population.print_scores()
         population.print_avg_score()
@@ -291,7 +308,7 @@ if __name__ == "__main__":
         best_individuals = population.select_best_individual(keep_best)
         if epoch < epochs - 1:
             population.create_next_generation(best_individuals)
+        population.mutate_all(0.2, 0.03) # 20% chance of mutate neuron
+        print("--- %s seconds ---" % (time.time() - start_time))
 
-    population.print_scores()
-    print("--- %s seconds ---" % (time.time() - start_time))
-
+    #population.print_scores()
