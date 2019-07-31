@@ -2,7 +2,8 @@ import random
 import numpy
 import math
 import pickle
-from multiprocessing import Pool
+import time
+start_time = time.time()
 
 class Wallet:
     def __init__(self, fees_rate, money, btc):
@@ -266,10 +267,10 @@ if __name__ == "__main__":
     #filename = "coinbaseUSD_1min_clean.csv"
     filename = "coinbaseUSD_1M.csv"
     layers = [8, 20, 10, 5, 3]
-    epochs = 200
+    epochs = 100
     starting_balance = 100
     keep_best = 2
-    nb_population = 2
+    nb_population = 10
     btc = 0
     fees_rate = 0.5
     population = Population(nb_population, layers, fees_rate, starting_balance, btc)
@@ -279,13 +280,8 @@ if __name__ == "__main__":
         for line in get_all_line_csv(filename):
             X = get_X(line)
             price = X[3]
-            params = []
-            #predict(poppulation, layers, price, X, i):
             for i in range(len(population.list_individual)):
-                l = (population, layers, price, X, i)
-                params.append(l)
-                with Pool(5) as p:
-                    p.starmap(predict, params)
+                predict(population, layers, price, X, i)
             
 
         population.update_all_scores(price)
@@ -297,4 +293,5 @@ if __name__ == "__main__":
             population.create_next_generation(best_individuals)
 
     population.print_scores()
+    print("--- %s seconds ---" % (time.time() - start_time))
 
