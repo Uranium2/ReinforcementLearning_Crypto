@@ -104,15 +104,9 @@ class Population:
         for i in range(0, len_best, 2):
             father = best_individuals[i]
             mother = best_individuals[i + 1]
-            W = crossover(self.layers, father, mother)
-            new_individuals.append(W)
-
-        random.shuffle(best_individuals)
-        for i in range(0, len_best, 2):
-            father = best_individuals[i]
-            mother = best_individuals[i + 1]
-            W = crossover(self.layers, father, mother)
-            new_individuals.append(W)
+            W1, W2 = crossover(self.layers, father, mother)
+            new_individuals.append(W1)
+            new_individuals.append(W2)
 
         return new_individuals
 
@@ -123,16 +117,16 @@ class Population:
         self.list_individual.clear()
         self.list_wallet.clear()
 
-        # self.list_individual.append(best_individuals[0]) # Keep best of best
+        self.list_individual.append(best_individuals[0]) # Keep best of best
 
         # for i in range(len_best): # Copy best individual
         # 	self.list_individual.append(best_individuals[i])
 
         self.list_individual = self.list_individual + self.create_new_from_old_gen(
-            best_individuals, len_best
+            best_individuals, len_best - 1
         )
 
-        for i in range(len_old):  # fill with new random ones
+        for i in range(len_old - 1):  # fill with new random ones
             self.list_individual.append(init_NN(self.layers))
 
         for i in range(len_best + len_old):  # reset wallets
@@ -144,9 +138,7 @@ class Population:
     def save_individuals(self):
         for i in range(len(self.list_individual)):
             l = str(self.layers)
-            #l = "_".join(map(str, l))
             filename = "saves/l_" + l
-            # filename = filename + "_s_" + str(self.list_wallet[i].score)
             filename = filename + "_nb_" + str(i) + ".dat"
             filename = filename.replace(", ", "_")
             filename = filename.replace("[", "")
@@ -154,12 +146,22 @@ class Population:
             f = open(filename,'wb')
             pickle.dump(self.list_individual[i], f)
             f.close()
-            # f = open(filename,'rb')
-            # example_dict = pickle.load(f)
-            # print(example_dict)
+
+    def load_individuals(self):
+        for i in range(len(self.list_individual)):
+            l = str(self.layers)
+            filename = "saves/l_" + l
+            filename = filename + "_nb_" + str(i) + ".dat"
+            filename = filename.replace(", ", "_")
+            filename = filename.replace("[", "")
+            filename = filename.replace("]", "")
+            f = open(filename,'rb')
+            example_dict = pickle.load(f)
+            self.list_individual[i] = example_dict
+            f.close()
 
     def mutate_all(self, freq, rate):
-        for i in range(len(self.list_individual)):
+        for i in range(1, len(self.list_individual)): # Don't mutate best
             mutate( self.layers, self.list_individual[i], freq, rate)
 
 def predict(population, layers, price, X, i):
@@ -231,23 +233,38 @@ def get_next_action(predictions):
 
 
 def crossover_w(father_w, mother_w):
-    return random.uniform(father_w, mother_w)
+    return random.uniform(father_w + 0.5, mother_w - 0.5)
 
 
 def crossover(layers, father, mother):
-    W = []
+    rng = random.uniform(0, 100)
+    rate = random.uniform(0, 100)
+    W1 = []
+    W2 = []
     for l in range(1, len(layers)):
         if l == 1:
-            W.append([])
-        W.append([])
+            W1.append([])
+            W2.append([])
+        W1.append([])
+        W2.append([])
         for j in range(1, layers[l] + 1):
             if j == 1:
-                W[l].append([])
-            W[l].append([])
+                W1[l].append([])
+                W2[l].append([])
+            W1[l].append([])
+            W2[l].append([])
             for i in range(layers[l - 1] + 1):
-                W[l][j].append([])
-                W[l][j][i] = crossover_w(father[l][j][i], mother[l][j][i])
-    return W
+                W1[l][j].append([])
+                W2[l][j].append([])
+                if rng >= rate:
+                    W1[l][j][i] = father[l][j][i]
+                    W2[l][j][i] = mother[l][j][i]
+                else:
+                    W1[l][j][i] = mother[l][j][i]
+                    W2[l][j][i] = father[l][j][i]
+
+
+    return W1, W2
 
 
 def mutate(layers, W, freq, rate):
@@ -280,12 +297,12 @@ def get_all_line_csv(filename):
 if __name__ == "__main__":
     #filename = "coinbaseUSD_1min_clean.csv"
     # filename = "coinbaseUSD_1M.csv"
-    filename = "foo2.csv"
+    filename = "foo3.csv"
     layers = [8, 20, 10, 5, 3]
     epochs = 200
     starting_balance = 100
-    keep_best = 5
-    nb_population = 10
+    keep_best = 3
+    nb_population = 10  
     btc = 0
     fees_rate = 0.5
     population = Population(nb_population, layers, fees_rate, starting_balance, btc)
