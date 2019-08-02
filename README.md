@@ -22,7 +22,7 @@ The signal score is the money made at the end of the period in the CSV file.
       - [X] Random propability to take Father's or Mother's neuron for child1 and child2
       - [X] ~~Average neurons~~ Seems to have a bad convergence property
       - [X] ~~Random between father and mother neurons~~ Seems to have a bad convergence property
-   - [X] Mutation
+  - [X] Mutation
     - [X] Random propability to mutate neurons in the NN.
-      - [] Dynamic mutation rate/probabilty depending epochs?
+      - [ ] Dynamic mutation rate/probabilty depending epochs?
    - [ ] Profit?
