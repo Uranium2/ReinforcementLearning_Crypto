@@ -3,6 +3,7 @@ import numpy
 import math
 import pickle
 import time
+from multiprocessing import Pool
 start_time = time.time()
 
 class Wallet:
@@ -16,8 +17,9 @@ class Wallet:
     def update_score(self, price):
         self.score = self.money
         self.score = self.score + (self.btc * price)
+        return self.score
 
-    def make_action(self, action, price):
+    def make_action(self, action, price, i):
         if action == "BUY":
             # print(action)
             self.btc = self.btc + self.money / price
@@ -39,6 +41,9 @@ class Wallet:
         # print("My money: " + str(self.money))
         # print(" ")
 
+def update_wallet_i(wallet, price):
+    res = wallet.update_score(price)
+    return res
 
 class Population:
     def __init__(self, nb_population, layers, fees_rate, money, btc):
@@ -164,6 +169,11 @@ class Population:
         for i in range(1, len(self.list_individual)): # Don't mutate best
             mutate( self.layers, self.list_individual[i], freq, rate)
 
+    def edit_wallet(self, btc, money, last_action, i):
+        self.list_wallet[i].btc = btc
+        self.list_wallet[i].money = money
+        self.list_wallet[i].last_action = last_action
+
 def predict(population, layers, price, X, i):
     if population.list_wallet[i].last_action == "SELL":
         X.append(-1)
@@ -175,7 +185,7 @@ def predict(population, layers, price, X, i):
         X.append("This should make me crash")
     predictions = get_all_predictions(layers, population.list_individual[i], X)
     action = get_next_action(predictions)
-    population.list_wallet[i].make_action(action, price)
+    population.list_wallet[i].make_action(action, price, i)
 
 
 def get_all_predictions(layers, W, Xinput):
@@ -294,6 +304,17 @@ def get_all_line_csv(filename):
     return lines
 
 
+def predict_individual(population, i, filename):
+    for line in get_all_line_csv(filename):
+        X = get_X(line)
+        price = X[3]
+        maxi = 19891.99
+        mini = 0.06
+        price = price * (maxi - mini) + mini
+        predict(population, layers, price, X, i)
+        #print(population.list_wallet[i].money)
+    return update_wallet_i(population.list_wallet[i], price)
+
 if __name__ == "__main__":
     #filename = "coinbaseUSD_1min_clean.csv"
     # filename = "coinbaseUSD_1M.csv"
@@ -309,16 +330,17 @@ if __name__ == "__main__":
 
     for epoch in range(epochs):
         population.reset_all_scores(starting_balance)
-        for line in get_all_line_csv(filename):
-            X = get_X(line)
-            price = X[3]
-            maxi = 19891.99
-            mini = 0.06
-            price = price * (maxi - mini) + mini
-            for i in range(len(population.list_individual)):
-                predict(population, layers, price, X, i)
-            
-        population.update_all_scores(price)
+        p = Pool()
+        params = []
+        for i in range(len(population.list_individual)):
+            params.append((population, i, filename))
+        result = p.starmap(predict_individual, params)
+        p.close()
+        p.join()   
+
+        for i in range(len(population.list_individual)):
+            population.list_wallet[i].score = result[i]
+
         population.print_scores()
         population.print_avg_score()
         population.save_individuals()
