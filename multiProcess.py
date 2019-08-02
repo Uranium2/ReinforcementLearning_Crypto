@@ -314,7 +314,7 @@ def predict_individual(population, i, filename):
         maxi = 19891.99
         mini = 0.06
         price = price * (maxi - mini) + mini
-        predict(population, layers, price, X, i)
+        predict(population, population.layers, price, X, i)
         #print(population.list_wallet[i].money)
     return update_wallet_i(population.list_wallet[i], price)
 
