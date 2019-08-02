@@ -188,6 +188,7 @@ def predict(population, layers, price, X, i):
     predictions = get_all_predictions(layers, population.list_individual[i], X)
     action = get_next_action(predictions)
     population.list_wallet[i].make_action(action, price, i)
+    return action
 
 
 def get_all_predictions(layers, W, Xinput):
@@ -318,6 +319,20 @@ def predict_individual(population, i, filename):
         #print(population.list_wallet[i].money)
     return update_wallet_i(population.list_wallet[i], price)
 
+def predict_individual_log(population, i, filename):
+    for line in get_all_line_csv(filename):
+        X = get_X(line)
+        X.pop() # rm timestamp
+        price = X[3]
+        maxi = 19891.99
+        mini = 0.06
+        price = price * (maxi - mini) + mini
+        action = predict(population, population.layers, price, X, i)
+        with open("log_actions_" + str(i) + ".csv",'a') as fd:
+            fd.write(str(price) + "," + str(action) + '\n')
+    print(population.list_wallet[i].money)
+
+
 if __name__ == "__main__":
     #filename = "coinbaseUSD_1min_clean.csv"
     # filename = "coinbaseUSD_1M.csv"
@@ -330,7 +345,6 @@ if __name__ == "__main__":
     btc = 0
     fees_rate = 0.5
     population = Population(nb_population, layers, fees_rate, starting_balance, btc)
-
     for epoch in range(epochs):
         population.reset_all_scores(starting_balance)
         p = Pool()
@@ -350,7 +364,10 @@ if __name__ == "__main__":
         best_individuals = population.select_best_individual(keep_best)
         if epoch < epochs - 1:
             population.create_next_generation(best_individuals)
-        population.mutate_all(0.2, 0.03) # 20% chance of mutate neuron
+            population.mutate_all(0.2, 0.03) # 20% chance of mutate neuron
         print("--- %s seconds ---" % (time.time() - start_time))
 
+    # log actions of the best indivudual
+    for i in range(len(population.list_individual)):
+        predict_individual_log(population, i, filename)
     #population.print_scores()
