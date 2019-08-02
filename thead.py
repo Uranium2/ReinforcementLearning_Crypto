@@ -70,13 +70,15 @@ class Population:
             print("Wallet " + str(i) + " = " + str(wallet.score))
             i = i + 1
 
-    def print_avg_score(self):
+    def print_avg_score(self, epoch):
         avg = 0
         for wallet in self.list_wallet:
             avg = avg + wallet.score
         print(
             "Average score for this generation is :" + str(avg / len(self.list_wallet))
         )
+        with open('avg.csv','a') as fd:
+            fd.write(str(epoch) + "," + str(avg / len(self.list_wallet)) + '\n')
 
     def reset_all_scores(self, money):
         for wallet in self.list_wallet:
@@ -343,7 +345,7 @@ if __name__ == "__main__":
             population.list_wallet[i].score = result[i]
 
         population.print_scores()
-        population.print_avg_score()
+        population.print_avg_score(epoch)
         population.save_individuals()
         best_individuals = population.select_best_individual(keep_best)
         if epoch < epochs - 1:
