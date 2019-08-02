@@ -2,7 +2,7 @@
 Learning how to make a Reinforcement Learning algorithm
 
 We create a population of X individuals with X wallets.
-For start each wallets has 1000 "euros" inside it and 0 "BTC tokens".
+For start each wallets has 100 "euros" inside it and 0 "BTC tokens".
 
 We create a neural network with given layers. Each nodes are between [-1, 1].
 A prediction method will get what action to make depending on the NN and the inputs.
