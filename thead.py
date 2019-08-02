@@ -307,6 +307,7 @@ def get_all_line_csv(filename):
 def predict_individual(population, i, filename):
     for line in get_all_line_csv(filename):
         X = get_X(line)
+        X.pop() # rm timestamp
         price = X[3]
         maxi = 19891.99
         mini = 0.06
@@ -319,7 +320,7 @@ if __name__ == "__main__":
     #filename = "coinbaseUSD_1min_clean.csv"
     # filename = "coinbaseUSD_1M.csv"
     filename = "foo2.csv"
-    layers = [8, 20, 10, 5, 3]
+    layers = [7, 20, 10, 5, 3]
     epochs = 400
     starting_balance = 100
     keep_best = 3
