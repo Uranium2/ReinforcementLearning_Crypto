@@ -177,14 +177,14 @@ class Population:
         self.list_wallet[i].last_action = last_action
 
 def predict(population, layers, price, X, i):
-    if population.list_wallet[i].last_action == "SELL":
-        X.append(-1)
-    elif population.list_wallet[i].last_action == "BUY":
-        X.append(1)
-    elif population.list_wallet[i].last_action == "HOLD":
-        X.append(0)
-    else:
-        X.append("This should make me crash")
+    # if population.list_wallet[i].last_action == "SELL":
+    #     X.append(-1)
+    # elif population.list_wallet[i].last_action == "BUY":
+    #     X.append(1)
+    # elif population.list_wallet[i].last_action == "HOLD":
+    #     X.append(0)
+    # else:
+    #     X.append("This should make me crash")
     predictions = get_all_predictions(layers, population.list_individual[i], X)
     action = get_next_action(predictions)
     population.list_wallet[i].make_action(action, price, i)
@@ -337,8 +337,8 @@ if __name__ == "__main__":
     #filename = "coinbaseUSD_1min_clean.csv"
     # filename = "coinbaseUSD_1M.csv"
     filename = "foo2.csv"
-    layers = [7, 20, 10, 5, 3]
-    epochs = 400
+    layers = [6, 20, 10, 5, 3]
+    epochs = 800
     starting_balance = 100
     keep_best = 3
     nb_population = 10  
