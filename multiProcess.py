@@ -4,6 +4,8 @@ import math
 import pickle
 import time
 from multiprocessing import Pool
+import os
+import glob
 start_time = time.time()
 
 class Wallet:
@@ -177,14 +179,14 @@ class Population:
         self.list_wallet[i].last_action = last_action
 
 def predict(population, layers, price, X, i):
-    # if population.list_wallet[i].last_action == "SELL":
-    #     X.append(-1)
-    # elif population.list_wallet[i].last_action == "BUY":
-    #     X.append(1)
-    # elif population.list_wallet[i].last_action == "HOLD":
-    #     X.append(0)
-    # else:
-    #     X.append("This should make me crash")
+    if population.list_wallet[i].last_action == "SELL":
+        X.append(-1)
+    elif population.list_wallet[i].last_action == "BUY":
+        X.append(-1)
+    elif population.list_wallet[i].last_action == "HOLD":
+        X.append(1)
+    else:
+        X.append("This should make me crash")
     predictions = get_all_predictions(layers, population.list_individual[i], X)
     action = get_next_action(predictions)
     population.list_wallet[i].make_action(action, price, i)
@@ -293,11 +295,12 @@ def mutate(layers, W, freq, rate):
                         W[l][j][i] = W[l][j][i] - (W[l][j][i] * rate)
 
 
-def get_X(line):
+def get_X(line, nb_neur_first_layer):
     X = line.split(",")
-    X = X[1:]
+    price = float(X[-1])
+    X = X[1:nb_neur_first_layer] # rm timestamp
     X = [float(i) for i in X]
-    return X
+    return X, price
 
 
 def get_all_line_csv(filename):
@@ -309,65 +312,68 @@ def get_all_line_csv(filename):
 
 def predict_individual(population, i, filename):
     for line in get_all_line_csv(filename):
-        X = get_X(line)
-        X.pop() # rm timestamp
-        price = X[3]
-        maxi = 19891.99
-        mini = 0.06
-        price = price * (maxi - mini) + mini
+        X, price = get_X(line, population.layers[0])
         predict(population, population.layers, price, X, i)
         #print(population.list_wallet[i].money)
     return update_wallet_i(population.list_wallet[i], price)
 
 def predict_individual_log(population, i, filename):
     for line in get_all_line_csv(filename):
-        X = get_X(line)
-        X.pop() # rm timestamp
-        price = X[3]
-        maxi = 19891.99
-        mini = 0.06
-        price = price * (maxi - mini) + mini
+        X, price = get_X(line, population.layers[0])
         action = predict(population, population.layers, price, X, i)
         with open("log_actions_" + str(i) + ".csv",'a') as fd:
             fd.write(str(price) + "," + str(action) + '\n')
-    print(population.list_wallet[i].money)
+    print("Wallet " + str(i) + " " + str(population.list_wallet[i].money))
 
 
 if __name__ == "__main__":
     #filename = "coinbaseUSD_1min_clean.csv"
-    # filename = "coinbaseUSD_1M.csv"
-    filename = "foo2.csv"
-    layers = [6, 20, 10, 5, 3]
-    epochs = 800
-    starting_balance = 100
-    keep_best = 3
-    nb_population = 10  
+    #filename = "coinbaseUSD_1M.csv"
+    filename = "output.csv"
+    train_mode = True
+    layers = [4, 10, 3]
+    epochs = 100
+    starting_balance = 1
+    keep_best = 15
+    nb_population = 20
     btc = 0
     fees_rate = 0.5
+    fileList = glob.glob('log_actions_*.csv')
+    layers[0] = layers[0] + 1 # bias DO NOT EDIT
+    for filePath in fileList:
+        os.remove(filePath)
     population = Population(nb_population, layers, fees_rate, starting_balance, btc)
-    for epoch in range(epochs):
-        population.reset_all_scores(starting_balance)
-        p = Pool()
-        params = []
-        for i in range(len(population.list_individual)):
-            params.append((population, i, filename))
-        result = p.starmap(predict_individual, params)
-        p.close()
-        p.join()   
+    if train_mode:
+        for epoch in range(epochs):
+            population.reset_all_scores(starting_balance)
+            p = Pool()
+            params = []
+            for i in range(len(population.list_individual)):
+                params.append((population, i, filename))
+            result = p.starmap(predict_individual, params)
+            p.close()
+            p.join()   
 
-        for i in range(len(population.list_individual)):
-            population.list_wallet[i].score = result[i]
+            for i in range(len(population.list_individual)):
+                population.list_wallet[i].score = result[i]
 
-        population.print_scores()
-        population.print_avg_score(epoch)
-        population.save_individuals()
-        best_individuals = population.select_best_individual(keep_best)
-        if epoch < epochs - 1:
-            population.create_next_generation(best_individuals)
-            population.mutate_all(0.2, 0.03) # 20% chance of mutate neuron
-        print("--- %s seconds ---" % (time.time() - start_time))
+            population.print_scores()
+            population.print_avg_score(epoch)
+            population.save_individuals()
+            best_individuals = population.select_best_individual(keep_best)
+            if epoch < epochs - 1:
+                population.create_next_generation(best_individuals)
+                population.mutate_all(0.35, 0.10) # 10% chance of mutate neuron de 3%
+            print("--- " + str(time.time() - start_time) + " seconds ---  epoch: " + str(epoch))
+    else:
+        population.load_individuals()
 
     # log actions of the best indivudual
+    p = Pool()
+    params = []
     for i in range(len(population.list_individual)):
-        predict_individual_log(population, i, filename)
+        params.append((population, i, filename))
+    result = p.starmap(predict_individual_log, params)
+    p.close()
+    p.join()   
     #population.print_scores()
