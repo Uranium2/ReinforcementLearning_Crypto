@@ -24,11 +24,13 @@ class Wallet:
     def make_action(self, action, price, i):
         if action == "BUY":
             # print(action)
+            self.money = self.money - (self.fees_rate / 100) * self.money
             self.btc = self.btc + self.money / price
             self.money = self.money - self.money
             self.last_action = "BUY"
         elif action == "SELL":
             # print(action)
+            self.money = self.money - (self.fees_rate / 100) * self.money
             self.money = self.money + self.btc * price
             self.btc = self.btc - self.btc
             self.last_action = "SELL"
@@ -128,11 +130,8 @@ class Population:
 
         self.list_individual.append(best_individuals[0]) # Keep best of best
 
-        # for i in range(len_best): # Copy best individual
-        # 	self.list_individual.append(best_individuals[i])
-
         self.list_individual = self.list_individual + self.create_new_from_old_gen(
-            best_individuals, len_best - 1
+            best_individuals, len_best
         )
 
         for i in range(len_old - 1):  # fill with new random ones
@@ -170,7 +169,7 @@ class Population:
             f.close()
 
     def mutate_all(self, freq, rate):
-        for i in range(1, len(self.list_individual)): # Don't mutate best
+        for i in range(1, len(self.list_individual)): # mutate best
             mutate( self.layers, self.list_individual[i], freq, rate)
 
     def edit_wallet(self, btc, money, last_action, i):
@@ -182,9 +181,9 @@ def predict(population, layers, price, X, i):
     if population.list_wallet[i].last_action == "SELL":
         X.append(-1)
     elif population.list_wallet[i].last_action == "BUY":
-        X.append(-1)
+        X.append(0.7)
     elif population.list_wallet[i].last_action == "HOLD":
-        X.append(1)
+        X.append(0.4)
     else:
         X.append("This should make me crash")
     predictions = get_all_predictions(layers, population.list_individual[i], X)
@@ -323,7 +322,7 @@ def predict_individual_log(population, i, filename):
         action = predict(population, population.layers, price, X, i)
         with open("log_actions_" + str(i) + ".csv",'a') as fd:
             fd.write(str(price) + "," + str(action) + '\n')
-    print("Wallet " + str(i) + " " + str(population.list_wallet[i].money))
+    print("Wallet " + str(i) + " " + str(population.list_wallet[i].score))
 
 
 if __name__ == "__main__":
@@ -331,13 +330,13 @@ if __name__ == "__main__":
     #filename = "coinbaseUSD_1M.csv"
     filename = "output.csv"
     train_mode = True
-    layers = [4, 10, 3]
-    epochs = 100
+    layers = [4, 5, 5, 3]
+    epochs = 200
     starting_balance = 1
     keep_best = 15
     nb_population = 20
     btc = 0
-    fees_rate = 0.5
+    fees_rate = 0.25
     fileList = glob.glob('log_actions_*.csv')
     layers[0] = layers[0] + 1 # bias DO NOT EDIT
     for filePath in fileList:
@@ -363,7 +362,7 @@ if __name__ == "__main__":
             best_individuals = population.select_best_individual(keep_best)
             if epoch < epochs - 1:
                 population.create_next_generation(best_individuals)
-                population.mutate_all(0.35, 0.10) # 10% chance of mutate neuron de 3%
+                population.mutate_all(0.45, 0.50) # 10% chance of mutate neuron de 3%
             print("--- " + str(time.time() - start_time) + " seconds ---  epoch: " + str(epoch))
     else:
         population.load_individuals()
