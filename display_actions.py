@@ -14,7 +14,7 @@ y = data['Close']
 
 def diplay_graphs(x, y):
     h = ['Close', 'Action']
-    for i in range(5):
+    for i in range(2):
         data2 = pd.read_csv("saves/log_actions_" + str(i) + ".csv", names=h)
         actions = data2['Action']
 
@@ -36,8 +36,8 @@ def diplay_graphs(x, y):
                 ySell.append(10000)
         plt.figure()
         plt.plot(x,y)
-        green = (0, 1, 0, 0.1)
-        red = (1, 0, 0, 0.1)
+        green = (0, 1, 0, 0.5)
+        red = (1, 0, 0, 0.5)
         plt.bar(xBuy, yBuy, color=green)
         plt.bar(xSell, ySell, color=red)
 

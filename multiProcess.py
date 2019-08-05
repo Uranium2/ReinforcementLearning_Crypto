@@ -207,6 +207,8 @@ def get_all_predictions(layers, W, Xinput):
             X.append([])
             for i in range(layers[l] + 1):
                 X[l].append([])
+                if i == 0:
+                    X[l][i] = 1
                 X[l][i] = 0
 
     for l in range(1, len(layers)):
@@ -320,7 +322,7 @@ def predict_individual_log(population, i, filename):
     for line in get_all_line_csv(filename):
         X, price = get_X(line, population.layers[0])
         action = predict(population, population.layers, price, X, i)
-        with open("log_actions_" + str(i) + ".csv",'a') as fd:
+        with open("saves/log_actions_" + str(i) + ".csv",'a') as fd:
             fd.write(str(price) + "," + str(action) + '\n')
     print("Wallet " + str(i) + " " + str(population.list_wallet[i].score))
 
@@ -330,14 +332,16 @@ if __name__ == "__main__":
     #filename = "coinbaseUSD_1M.csv"
     filename = "output.csv"
     train_mode = True
-    layers = [4, 5, 5, 3]
-    epochs = 200
+    layers = [4, 5, 3]
+    epochs = 1000
     starting_balance = 1
     keep_best = 15
     nb_population = 20
     btc = 0
     fees_rate = 0.25
-    fileList = glob.glob('log_actions_*.csv')
+    mutate_rate = 0.45
+    mutation_mutiplier = 0.30
+    fileList = glob.glob('saves/log_actions_*.csv')
     layers[0] = layers[0] + 1 # bias DO NOT EDIT
     for filePath in fileList:
         os.remove(filePath)
@@ -360,9 +364,13 @@ if __name__ == "__main__":
             population.print_avg_score(epoch)
             population.save_individuals()
             best_individuals = population.select_best_individual(keep_best)
+            if epoch == epochs / 2 or epoch == epochs / 4:
+                print("Changing Mutation rates")
+                mutate_rate = mutate_rate / 2
+                mutation_mutiplier =  mutation_mutiplier / 2
             if epoch < epochs - 1:
                 population.create_next_generation(best_individuals)
-                population.mutate_all(0.45, 0.50) # 10% chance of mutate neuron de 3%
+                population.mutate_all(mutate_rate, mutation_mutiplier) # 10% chance of mutate neuron de 3%
             print("--- " + str(time.time() - start_time) + " seconds ---  epoch: " + str(epoch))
     else:
         population.load_individuals()
