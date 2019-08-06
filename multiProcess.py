@@ -67,7 +67,10 @@ class Population:
         self.initial_fees_rate = fees_rate
         self.initial_money = money
         self.initial_btc = btc
-        self.total_input = layers[0] * nb_history + 1
+        if nb_history > 0:
+            self.total_input = layers[0] * nb_history + 1
+        else:
+            self.total_input = layers[0]
         self.nb_history = nb_history
 
         for i in range(nb_population):
@@ -365,16 +368,16 @@ if __name__ == "__main__":
     filename = "output.csv"
     train_mode = True
     layers = [4, 5, 3]
-    epochs = 1
+    epochs = 400
     starting_balance = 1
-    keep_best = 1
-    nb_population = 2
+    keep_best = 25
+    nb_population = 30
     btc = 0
     fees_rate = 0.25
     mutate_rate = 0.45
     mutation_mutiplier = 0.30
     fileList = glob.glob('saves/log_actions_*.csv')
-    nb_history = 3
+    nb_history = 0
     for filePath in fileList:
         os.remove(filePath)
     population = Population(nb_population, layers, fees_rate, starting_balance, btc, nb_history)
