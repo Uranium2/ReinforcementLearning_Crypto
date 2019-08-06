@@ -177,7 +177,7 @@ class Population:
         self.list_wallet[i].money = money
         self.list_wallet[i].last_action = last_action
 
-def predict(population, layers, price, X, i):
+def predict(population, price, X, i):
     if population.list_wallet[i].last_action == "SELL":
         X.append(-1)
     elif population.list_wallet[i].last_action == "BUY":
@@ -186,7 +186,7 @@ def predict(population, layers, price, X, i):
         X.append(0.4)
     else:
         X.append("This should make me crash")
-    predictions = get_all_predictions(layers, population.list_individual[i], X)
+    predictions = get_all_predictions(population.layers, population.list_individual[i], X)
     action = get_next_action(predictions)
     population.list_wallet[i].make_action(action, price, i)
     return action
@@ -312,16 +312,24 @@ def get_all_line_csv(filename):
 
 
 def predict_individual(population, i, filename):
+    history = 0
     for line in get_all_line_csv(filename):
-        X, price = get_X(line, population.layers[0])
-        predict(population, population.layers, price, X, i)
+        X_total = []
+        if history > 3: # 3 lines history
+            X, price = get_X(line, population.layers[0])
+            X_total.append(X)
+            history = history + 1
+        else:
+            X, price = get_X(line, population.layers[0])
+            X_total.append(X) # add history
+            predict(population, price, X_total[-3], i)        
         #print(population.list_wallet[i].money)
     return update_wallet_i(population.list_wallet[i], price)
 
 def predict_individual_log(population, i, filename):
     for line in get_all_line_csv(filename):
         X, price = get_X(line, population.layers[0])
-        action = predict(population, population.layers, price, X, i)
+        action = predict(population, price, X, i)
         with open("saves/log_actions_" + str(i) + ".csv",'a') as fd:
             fd.write(str(price) + "," + str(action) + '\n')
     print("Wallet " + str(i) + " " + str(population.list_wallet[i].score))
@@ -333,7 +341,7 @@ if __name__ == "__main__":
     filename = "output.csv"
     train_mode = True
     layers = [4, 5, 3]
-    epochs = 1000
+    epochs = 1
     starting_balance = 1
     keep_best = 15
     nb_population = 20
