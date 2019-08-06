@@ -6,7 +6,17 @@ import time
 from multiprocessing import Pool
 import os
 import glob
+from collections.abc import Iterable
 start_time = time.time()
+
+
+def flatten(items):
+    for x in items:
+        if isinstance(x, Iterable) and not isinstance(x, (str, bytes)):
+            for sub_x in flatten(x):
+                yield sub_x
+        else:
+            yield x
 
 class Wallet:
     def __init__(self, fees_rate, money, btc):
@@ -50,13 +60,15 @@ def update_wallet_i(wallet, price):
     return res
 
 class Population:
-    def __init__(self, nb_population, layers, fees_rate, money, btc):
+    def __init__(self, nb_population, layers, fees_rate, money, btc, nb_history):
         self.layers = layers
         self.list_individual = []
         self.list_wallet = []
         self.initial_fees_rate = fees_rate
         self.initial_money = money
         self.initial_btc = btc
+        self.total_input = layers[0] * nb_history + 1
+        self.nb_history = nb_history
 
         for i in range(nb_population):
             self.list_individual.append(init_NN(self.layers))
@@ -313,25 +325,37 @@ def get_all_line_csv(filename):
 
 def predict_individual(population, i, filename):
     history = 0
+    X_total = []
     for line in get_all_line_csv(filename):
-        X_total = []
-        if history > 3: # 3 lines history
-            X, price = get_X(line, population.layers[0])
+        if history < population.nb_history:
+            X, price = get_X(line, int(population.layers[0]))
             X_total.append(X)
             history = history + 1
         else:
-            X, price = get_X(line, population.layers[0])
+            X, price = get_X(line, int(population.layers[0]))
             X_total.append(X) # add history
-            predict(population, price, X_total[-3], i)        
+            X = list(flatten(X_total[-population.total_input:]))
+            predict(population, price, X, i)        
         #print(population.list_wallet[i].money)
     return update_wallet_i(population.list_wallet[i], price)
 
 def predict_individual_log(population, i, filename):
+    history = 0
+    X_total = []
     for line in get_all_line_csv(filename):
-        X, price = get_X(line, population.layers[0])
-        action = predict(population, price, X, i)
-        with open("saves/log_actions_" + str(i) + ".csv",'a') as fd:
-            fd.write(str(price) + "," + str(action) + '\n')
+        if history < population.nb_history:
+            X, price = get_X(line, int(population.layers[0]))
+            X_total.append(X)
+            history = history + 1
+            with open("saves/log_actions_" + str(i) + ".csv",'a') as fd:
+                fd.write(str(price) + "," + "HOLD" + '\n')
+        else:
+            X, price = get_X(line, int(population.layers[0]))
+            X_total.append(X) # add history
+            X = list(flatten(X_total[-population.total_input:]))
+            action = predict(population, price, X, i)  
+            with open("saves/log_actions_" + str(i) + ".csv",'a') as fd:
+                fd.write(str(price) + "," + str(action) + '\n')
     print("Wallet " + str(i) + " " + str(population.list_wallet[i].score))
 
 
@@ -343,17 +367,17 @@ if __name__ == "__main__":
     layers = [4, 5, 3]
     epochs = 1
     starting_balance = 1
-    keep_best = 15
-    nb_population = 20
+    keep_best = 1
+    nb_population = 2
     btc = 0
     fees_rate = 0.25
     mutate_rate = 0.45
     mutation_mutiplier = 0.30
     fileList = glob.glob('saves/log_actions_*.csv')
-    layers[0] = layers[0] + 1 # bias DO NOT EDIT
+    nb_history = 3
     for filePath in fileList:
         os.remove(filePath)
-    population = Population(nb_population, layers, fees_rate, starting_balance, btc)
+    population = Population(nb_population, layers, fees_rate, starting_balance, btc, nb_history)
     if train_mode:
         for epoch in range(epochs):
             population.reset_all_scores(starting_balance)
