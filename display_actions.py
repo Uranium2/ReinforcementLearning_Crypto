@@ -12,9 +12,9 @@ y = data['Close']
 
 
 
-def diplay_graphs(x, y):
+def diplay_graphs(x, y, nb):
     h = ['Close', 'Action']
-    for i in range(2):
+    for i in range(nb):
         data2 = pd.read_csv("saves/log_actions_" + str(i) + ".csv", names=h)
         actions = data2['Action']
 
@@ -45,4 +45,4 @@ def diplay_graphs(x, y):
     plt.show()
 
 
-diplay_graphs(x, y)
+diplay_graphs(x, y, 5)

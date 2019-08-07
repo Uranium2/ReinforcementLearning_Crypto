@@ -333,7 +333,7 @@ if __name__ == "__main__":
     filename = "output.csv"
     train_mode = True
     layers = [4, 5, 3]
-    epochs = 1000
+    epochs = 5000
     starting_balance = 1
     keep_best = 15
     nb_population = 20
