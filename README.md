@@ -41,6 +41,14 @@ The signal score is the money made at the end of the period in the CSV file.
   Even if we never hit new max/min, how would I efficiently append new data to my program? The standardization won't be anymore centered on 0. That could make all the learning useless.
   
   So good results for training data, less sure about real time values. I guess I overfit the curve. Maybe the I need to had some more history feeded to the NN.
+  
+  ![Screenshot](https://github.com/Uranium2/ReinforcementLearning_Crypto/blob/master/imgs/1_to_93262941.png)
+  
+  In this example, we started with 1 USD and gained 93262941 USD from 2015 to mid 2019
+  
+  ![Screenshot](https://github.com/Uranium2/ReinforcementLearning_Crypto/blob/master/imgs/1_to_93262941_NN.png)
+  
+  This is the structure of one Neural Network trained by reinforcement. Weights were initialy set to random between [-1, 1] and modifiy over 5000 epochs of selection/crossover/mutation.
 
 ## Branch Master
   This branch should not be the master branch, but the `Xhistory` branch. The `noHistory` branch should been a specific case of `Xhistory` with `X = 0`, but I can't manage to get the same results.
