@@ -25,7 +25,7 @@ data['Low'].fillna(method='ffill', inplace=True)
 data['Close'].fillna(method='ffill', inplace=True)
 data.index = data.Timestamp
 
-data = data.resample('Y').agg({'Open': 'first', 
+data = data.resample('D').agg({'Open': 'first', 
                 'High': np.max,
                 'Low': np.min,
                 'Close': 'last',
@@ -37,6 +37,21 @@ data = data.resample('Y').agg({'Open': 'first',
 data['Variation'] = data.apply(lambda row: label_var(row), axis=1)
 data['Sign'] = data.apply(lambda row: sign(row), axis=1)
 
-data.to_csv("coinbaseUSD_1Y.csv")
+price = data['Close'].values
+
+print(price)
+
+data = data.drop(columns="Open")
+data = data.drop(columns="High")
+data = data.drop(columns="Low")
+data = data.drop(columns="Close")
+data = data.drop(columns="Volume_(BTC)")
+data = data.drop(columns="Volume_(Currency)")
+data = data.drop(columns="Weighted_Price")
+data = data.drop(columns="Variation")
+
+data.insert(1, "Price", price)
+
+data.to_csv("coinbaseUSD_1D.csv")
 
 print(data)
