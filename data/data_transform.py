@@ -35,7 +35,7 @@ data = data.resample('D').agg({'Open': 'first',
 
 
 data['Variation'] = data.apply(lambda row: label_var(row), axis=1)
-data['Sign'] = data.apply(lambda row: sign(row), axis=1)
+#data['Sign'] = data.apply(lambda row: sign(row), axis=1)
 
 price = data['Close'].values
 
@@ -48,7 +48,7 @@ data = data.drop(columns="Close")
 data = data.drop(columns="Volume_(BTC)")
 data = data.drop(columns="Volume_(Currency)")
 data = data.drop(columns="Weighted_Price")
-data = data.drop(columns="Variation")
+#data = data.drop(columns="Variation")
 
 data.insert(1, "Price", price)
 
