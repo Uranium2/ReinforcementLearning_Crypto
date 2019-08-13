@@ -65,3 +65,10 @@ The signal score is the money made at the end of the period in the CSV file.
   For example, if each candle is one day, what would be our reaction if we seen 6 red candles? Personnaly I would buy, since Crypto is a very speculative currency. And in my opinion, there will always be someone to try to make money over crashes.
 
   This reflection is **heavily biais** by my way of thinking of the market. In theory, it should learn it self the patterns with basic data like: `high`, `low`, `open`, `close`, `weight`, `volume`.
+
+
+## Disclaimer 
+
+This is a self learning project.
+
+In no event I shall be liable for any special, indirect, or consequential damages, or any damages whatsoever resulting from loss of money/cryptoccurency/stocks or profits if you base your decision on this learning project. The aim here is to understand how to build a Reinforcement Learning algoritm with Neurral Networks, not to earn money. Even if training result looks very appealing, this program will NEVER predict the future. At any instant you can lose all your money, invest what you can afford to lose. If you are a game money adict, please consult a doctor and do not hope making money with this project.
