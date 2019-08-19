@@ -60,16 +60,16 @@ def update_wallet_i(wallet, price):
 
 class Population:
     def __init__(self, nb_population, layers, fees_rate, money, btc, nb_history):
+        layers[0] = layers[0] + 1 # bias
         self.layers = layers
         self.list_individual = []
         self.list_wallet = []
         self.initial_fees_rate = fees_rate
         self.initial_money = money
         self.initial_btc = btc
-        self.total_input = layers[0] + nb_history - 1
         self.nb_history = nb_history
         if nb_history > 0:
-            self.total_input = nb_history + layers[0]
+            self.total_input = nb_history + layers[0] - 1
         else:
             self.total_input = layers[0]
 
@@ -374,18 +374,17 @@ if __name__ == "__main__":
     #filename = "coinbaseUSD_1M.csv"
     filename = "data/coinbaseUSD_1D.csv"
     train_mode = True
-    layers = [1, 3]
+    layers = [1, 10, 5, 3]
     epochs = 500
     starting_balance = 1
-    keep_best = 2
-    nb_population = 3
+    keep_best = 14
+    nb_population = 20
     btc = 0
     fees_rate = 0.25
     mutate_rate = 0.45
     mutation_mutiplier = 0.35
     fileList = glob.glob('saves/log_actions_*.csv')
-    layers[0] = layers[0] + 1 # bias DO NOT EDIT
-    nb_history = 0
+    nb_history = 2
     for filePath in fileList:
         os.remove(filePath)
     population = Population(nb_population, layers, fees_rate, starting_balance, btc, nb_history)
