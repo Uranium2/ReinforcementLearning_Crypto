@@ -418,7 +418,6 @@ if __name__ == "__main__":
             print("--- " + str(time.time() - start_time) + " seconds ---  epoch: " + str(epoch) + " / " + str(epochs))
     else:
         population.load_individuals()
-        print(population.list_wallet[0].money)
 
     # log actions of the best indivudual
     p = Pool()
