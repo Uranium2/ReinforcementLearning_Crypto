@@ -30,29 +30,44 @@ class Wallet:
         self.score = self.score + (self.btc * price)
         return self.score
 
-    def make_action(self, action, price, i):
+    def make_action(self, action, price, log_score):
+        initial = self.money
+        modif = self.money
         if action == "BUY":
             # print(action)
             self.money = self.money - (self.fees_rate / 100) * self.money
             self.btc = self.btc + self.money / price
-            self.money = self.money - self.money
+            self.money = 0
             self.last_action = "BUY"
+            modif = self.money
         elif action == "SELL":
             # print(action)
-            self.money = self.money - (self.fees_rate / 100) * self.money
-            self.money = self.money + self.btc * price
-            self.btc = self.btc - self.btc
-            self.last_action = "SELL"
+            if self.last_action != "SELL":
+                self.btc = self.btc - (self.fees_rate / 100) * self.btc
+                self.money = self.money + self.btc * price
+                self.btc = self.btc - self.btc
+                self.last_action = "SELL"
+                modif = self.money
+            else:
+                modif = initial
         elif action == "HOLD":
             # print(action)
             self.btc = self.btc
             self.money = self.money
             self.last_action = "HOLD"
+            modif = self.money
         else:
             print("\t\t\tERROR BAD ACTION!!!!")
         # print("My btc: " + str(self.btc))
         # print("My money: " + str(self.money))
         # print(" ")
+        if log_score:
+            f = open("saves/log_score.txt","a")
+            if modif != initial:
+                f.write(str(self.money) + '\t' + action + '\n')
+            else:
+                f.write("0" + '\t' + action + '\n')
+            f.close()
 
 def update_wallet_i(wallet, price):
     res = wallet.update_score(price)
@@ -191,7 +206,7 @@ class Population:
         self.list_wallet[i].money = money
         self.list_wallet[i].last_action = last_action
 
-def predict(population, price, X, i):
+def predict(population, price, X, i, log_score):
     # if population.list_wallet[i].last_action == "SELL":
     #     X.append(-1)
     # elif population.list_wallet[i].last_action == "BUY":
@@ -202,7 +217,7 @@ def predict(population, price, X, i):
     #     X.append("This should make me crash")
     predictions = get_all_predictions(population.layers, population.list_individual[i], X)
     action = get_next_action(predictions)
-    population.list_wallet[i].make_action(action, price, i)
+    population.list_wallet[i].make_action(action, price, log_score)
     return action
 
 
@@ -344,7 +359,7 @@ def predict_individual(population, i, filename):
             X, price = get_X(line, int(population.layers[0]))
             X_total.append(X) # add history
             X = list(flatten(X_total[-population.total_input:]))
-            predict(population, price, X, i)        
+            predict(population, price, X, i, False)        
         #print(population.list_wallet[i].money)
     return update_wallet_i(population.list_wallet[i], price)
 
@@ -363,7 +378,10 @@ def predict_individual_log(population, i, filename):
             X, price = get_X(line, int(population.layers[0]))
             X_total.append(X) # add history
             X = list(flatten(X_total[-population.total_input:]))
-            action = predict(population, price, X, i)
+            if i == 0:
+                action = predict(population, price, X, i, True)
+            else:
+                action = predict(population, price, X, i, False)
             with open("saves/log_actions_" + str(i) + ".csv",'a') as fd:
                 fd.write(str(price) + "," + str(action) + '\n')
                                
@@ -375,20 +393,22 @@ if __name__ == "__main__":
     #filename = "coinbaseUSD_1M.csv"
     filename = "data/coinbaseUSD_1D_4M.csv"
     filename_validation = "data/coinbaseUSD_1D_4M_validation.csv"
-    train_mode = False
+    train_mode = True
     layers = [1, 5, 3]
     epochs = 500
     starting_balance = 1
-    keep_best = 1
-    nb_population = 5
+    keep_best = 20
+    nb_population = 24
     btc = 0
     fees_rate = 0
     mutate_rate = 0.45
     mutation_mutiplier = 0.35
     fileList = glob.glob('saves/log_actions_*.csv')
-    nb_history = 5
+    fileList.append('saves/log_score.txt')
+    nb_history = 0
     for filePath in fileList:
-        os.remove(filePath)
+        if os.path.exists(filePath):
+            os.remove(filePath)
     population = Population(nb_population, layers, fees_rate, starting_balance, btc, nb_history)
     if train_mode:
         for epoch in range(epochs):
@@ -419,13 +439,23 @@ if __name__ == "__main__":
     else:
         population.load_individuals()
 
+
+    # reset wallets
+    for i in range(nb_population):
+        population.list_wallet[i].score = 0
+        population.list_wallet[i].money = starting_balance
+        population.list_wallet[i].btc = btc
+        population.list_wallet[i].last_action = "SELL"
+
     # log actions of the best indivudual
     p = Pool()
     params = []
+
     for i in range(len(population.list_individual)):
         params.append((population, i, filename_validation))
     result = p.starmap(predict_individual_log, params)
 
+    print("\t\t VALIDATION PREDICTIONS:")
     for i in range(nb_population):
         print("Wallet " + str(i) + " " + str(result[i]))
     p.close()
