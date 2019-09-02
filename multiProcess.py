@@ -363,28 +363,30 @@ def predict_individual_log(population, i, filename):
             X, price = get_X(line, int(population.layers[0]))
             X_total.append(X) # add history
             X = list(flatten(X_total[-population.total_input:]))
-            action = predict(population, price, X, i)  
+            action = predict(population, price, X, i)
             with open("saves/log_actions_" + str(i) + ".csv",'a') as fd:
                 fd.write(str(price) + "," + str(action) + '\n')
-    print("Wallet " + str(i) + " " + str(population.list_wallet[i].score))
+                               
+    return update_wallet_i(population.list_wallet[i], price)
 
 
 if __name__ == "__main__":
     #filename = "coinbaseUSD_1min_clean.csv"
     #filename = "coinbaseUSD_1M.csv"
-    filename = "data/coinbaseUSD_1D.csv"
-    train_mode = True
-    layers = [1, 10, 5, 3]
+    filename = "data/coinbaseUSD_1D_4M.csv"
+    filename_validation = "data/coinbaseUSD_1D_4M_validation.csv"
+    train_mode = False
+    layers = [1, 5, 3]
     epochs = 500
     starting_balance = 1
-    keep_best = 14
-    nb_population = 20
+    keep_best = 1
+    nb_population = 5
     btc = 0
-    fees_rate = 0.25
+    fees_rate = 0
     mutate_rate = 0.45
     mutation_mutiplier = 0.35
     fileList = glob.glob('saves/log_actions_*.csv')
-    nb_history = 2
+    nb_history = 5
     for filePath in fileList:
         os.remove(filePath)
     population = Population(nb_population, layers, fees_rate, starting_balance, btc, nb_history)
@@ -416,13 +418,17 @@ if __name__ == "__main__":
             print("--- " + str(time.time() - start_time) + " seconds ---  epoch: " + str(epoch) + " / " + str(epochs))
     else:
         population.load_individuals()
+        print(population.list_wallet[0].money)
 
     # log actions of the best indivudual
     p = Pool()
     params = []
     for i in range(len(population.list_individual)):
-        params.append((population, i, filename))
+        params.append((population, i, filename_validation))
     result = p.starmap(predict_individual_log, params)
+
+    for i in range(nb_population):
+        print("Wallet " + str(i) + " " + str(result[i]))
     p.close()
     p.join()   
     #population.print_scores()
