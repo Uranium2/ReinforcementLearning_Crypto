@@ -394,8 +394,8 @@ if __name__ == "__main__":
     filename = "data/coinbaseUSD_1D_4M.csv"
     filename_validation = "data/coinbaseUSD_1D_4M_validation.csv"
     train_mode = True
-    layers = [1, 5, 3]
-    epochs = 500
+    layers = [1, 10, 3]
+    epochs = 5000
     starting_balance = 1
     keep_best = 20
     nb_population = 24
@@ -405,7 +405,7 @@ if __name__ == "__main__":
     mutation_mutiplier = 0.35
     fileList = glob.glob('saves/log_actions_*.csv')
     fileList.append('saves/log_score.txt')
-    nb_history = 0
+    nb_history = 3
     for filePath in fileList:
         if os.path.exists(filePath):
             os.remove(filePath)
@@ -428,8 +428,9 @@ if __name__ == "__main__":
             population.print_avg_score(epoch)
             population.save_individuals()
             best_individuals = population.select_best_individual(keep_best)
-            if epoch == epochs / 2 or epoch == epochs  - epochs / 4:
+            if epoch % (25 * epochs / 100)
                 print("Changing Mutation rates")
+                exit()
                 mutate_rate = mutate_rate / 2
                 mutation_mutiplier =  mutation_mutiplier / 2
             if epoch < epochs - 1:
